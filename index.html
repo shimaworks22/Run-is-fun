@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Running Mates - 一緒に走る仲間を見つける</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: #EFEDE4; }
+  body {
+    font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  }
+  input, textarea, button { font-family: inherit; }
+  button { cursor: pointer; }
+  ::-webkit-scrollbar { display: none; }
+
+  .app-shell {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 0;
+  }
+  .phone {
+    width: min(390px, 100vw);
+    height: min(760px, 100vh);
+    background: #F6F4EF;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; }
+  .scroll { flex: 1; overflow-y: auto; }
+
+  .badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #5C6B65;
+    font-size: 13px;
+  }
+  .row svg { color: #0F5B45; }
+
+  .card-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #FFFFFF;
+    border: 1px solid #E4E0D6;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+
+  .progress-track {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: #E4E0D6;
+    overflow: hidden;
+  }
+  .progress-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  .progress-min-line {
+    position: absolute;
+    top: -2px;
+    width: 2px;
+    height: 12px;
+    background: #1F2A26;
+    opacity: 0.35;
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #5C6B65;
+  }
+
+  .fab {
+    position: absolute;
+    right: 20px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #E8743B;
+    color: #fff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(232,116,59,0.4);
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: #5C6B65;
+    font-size: 14px;
+    padding: 4px 0;
+  }
+
+  .info-card {
+    background: #FFFFFF;
+    border: 1px solid #E4E0D6;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .info-card-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #0F5B45;
+  }
+  .info-card-head span { font-size: 12px; color: #5C6B65; }
+  .info-card-value { font-size: 14px; font-weight: 600; color: #1F2A26; margin: 6px 0 0; }
+
+  .bottom-bar {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 14px 20px 20px;
+    background: linear-gradient(to top, #F6F4EF 60%, rgba(246,244,239,0));
+  }
+  .primary-btn {
+    width: 100%;
+    padding: 14px 0;
+    border-radius: 14px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1F2A26;
+    margin-bottom: 6px;
+  }
+  .text-input {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid #E4E0D6;
+    font-size: 14px;
+    color: #1F2A26;
+    outline: none;
+  }
+  textarea.text-input { resize: none; font-family: inherit; }
+
+  .level-options { display: flex; gap: 8px; }
+  .level-option {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 12px;
+    border: 1px solid #E4E0D6;
+    background: #FFFFFF;
+    color: #5C6B65;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .level-option.active-beginner { border: 1.5px solid #1C8F6E; background: #E3F3EC; color: #1C8F6E; }
+  .level-option.active-intermediate { border: 1.5px solid #D9A012; background: #FBF1DA; color: #D9A012; }
+  .level-option.active-advanced { border: 1.5px solid #E8743B; background: #FCE7DA; color: #E8743B; }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    border: 1px solid #E4E0D6;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .stepper button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: #E3F3EC;
+    color: #0F5B45;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .stepper-value { flex: 1; text-align: center; font-weight: 700; color: #1F2A26; }
+  .two-col { display: flex; gap: 12px; }
+  .two-col .field { flex: 1; }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="phone" id="phone"></div>
+</div>
+
+<script>
+const LEVELS = {
+  beginner: { label: "初級", color: "#1C8F6E", bg: "#E3F3EC" },
+  intermediate: { label: "中級", color: "#D9A012", bg: "#FBF1DA" },
+  advanced: { label: "上級", color: "#E8743B", bg: "#FCE7DA" },
+};
+
+let events = [
+  {
+    id: 1,
+    title: "皇居ラン・朝活5km",
+    place: "皇居外周（桜田門スタート）",
+    date: "6/20(土) 7:00",
+    level: "beginner",
+    minPeople: 4,
+    capacity: 12,
+    joined: 3,
+    distance: "5km",
+    pace: "6:30/km目安",
+    host: "ゆうき",
+    note: "ゆっくり気持ちよく走るのが目的です。初めての方も歓迎！終わったらコーヒー飲みに行きます。",
+  },
+  {
+    id: 2,
+    title: "多摩川ロング走 15km",
+    place: "多摩川サイクリングロード（二子玉川）",
+    date: "6/21(日) 6:30",
+    level: "advanced",
+    minPeople: 3,
+    capacity: 8,
+    joined: 4,
+    distance: "15km",
+    pace: "4:30/km目安",
+    host: "たくみ",
+    note: "フルマラソンに向けたペース走です。サブ4目標の方向け。",
+  },
+  {
+    id: 3,
+    title: "夜ラン＆ストレッチ会",
+    place: "代々木公園",
+    date: "6/19(金) 19:30",
+    level: "intermediate",
+    minPeople: 5,
+    capacity: 15,
+    joined: 2,
+    distance: "8km",
+    pace: "5:30/km目安",
+    host: "みさき",
+    note: "走った後に簡単なストレッチタイムもあります。仕事終わりにリフレッシュしましょう。",
+  },
+];
+
+let joinedState = {};
+let currentScreen = "list";
+let selectedId = null;
+
+const ICONS = {
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
+  pin: '<path d="M12 21s-7-6.5-7-11a7 7 0 1 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  users: '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14c2.8.3 5 2.4 5 5"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  back: '<path d="M15 19l-7-7 7-7"/>',
+  check: '<path d="M5 13l4 4L19 7"/>',
+  flame: '<path d="M12 2c2 3-1 4-1 7 0 2 1.5 3 3 3 2 0 3-1.5 3-3.5C19 13 17 21 12 21c-5 0-7-4-7-7 0-3 2-4 3-7 0 2 1 3 2 3 1 0 2-1 2-2.5C12 5 11 3 12 2z"/>',
+  gauge: '<path d="M12 14l3-3"/><circle cx="12" cy="14" r="1.5"/><path d="M4 14a8 8 0 1 1 16 0"/>',
+};
+
+function icon(name, size, color) {
+  size = size || 16;
+  color = color || "currentColor";
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICONS[name] + '</svg>';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function levelBadge(level) {
+  const l = LEVELS[level];
+  return '<span class="badge" style="color:' + l.color + ';background:' + l.bg + ';">' + l.label + '</span>';
+}
+
+function progressBar(joined, min, capacity) {
+  const pct = Math.min(100, Math.round((joined / capacity) * 100));
+  const minPct = Math.min(100, Math.round((min / capacity) * 100));
+  const reached = joined >= min;
+  const fillColor = reached ? "#1C8F6E" : "#D9A012";
+  const label = reached
+    ? '<span style="display:inline-flex;align-items:center;gap:4px;color:#0F5B45;font-weight:600;">' + icon("check", 13, "#0F5B45") + ' 開催ライン到達（' + joined + '人）</span>'
+    : 'あと' + (min - joined) + '人で開催ライン';
+  return (
+    '<div class="progress-track">' +
+      '<div class="progress-fill" style="width:' + pct + '%;background:' + fillColor + ';"></div>' +
+      '<div class="progress-min-line" style="left:' + minPct + '%;"></div>' +
+    '</div>' +
+    '<div class="progress-labels">' +
+      '<span>' + label + '</span>' +
+      '<span>' + joined + '/' + capacity + '人</span>' +
+    '</div>'
+  );
+}
+
+function getEffectiveJoined(ev) {
+  return ev.joined + (joinedState[ev.id] ? 1 : 0);
+}
+
+function renderList() {
+  const phone = document.getElementById("phone");
+  let cardsHtml = "";
+  events.forEach((ev) => {
+    const joined = getEffectiveJoined(ev);
+    cardsHtml +=
+      '<button class="card-btn" data-action="open" data-id="' + ev.id + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+          '<h3 style="font-size:16px;font-weight:700;margin:0;color:#1F2A26;line-height:1.4;">' + escapeHtml(ev.title) + '</h3>' +
+          levelBadge(ev.level) +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px;margin-top:10px;">' +
+          '<div class="row">' + icon("clock", 14) + escapeHtml(ev.date) + '</div>' +
+          '<div class="row">' + icon("pin", 14) + escapeHtml(ev.place) + '</div>' +
+        '</div>' +
+        '<div style="margin-top:14px;">' + progressBar(joined, ev.minPeople, ev.capacity) + '</div>' +
+      '</button>';
+  });
+
+  phone.innerHTML =
+    '<div class="screen">' +
+      '<div style="padding:20px 20px 12px;">' +
+        '<p style="font-size:13px;color:#5C6B65;margin:0;letter-spacing:0.5px;">RUNNING MATES</p>' +
+        '<h1 style="font-size:24px;font-weight:700;margin:4px 0 0;color:#1F2A26;">一緒に走る仲間を見つける</h1>' +
+      '</div>' +
+      '<div class="scroll" style="padding:4px 16px 90px;">' + cardsHtml + '</div>' +
+      '<button class="fab" data-action="create" aria-label="募集を作成">' + icon("plus", 26, "#fff") + '</button>' +
+    '</div>';
+
+  phone.querySelectorAll('[data-action="open"]').forEach((el) => {
+    el.addEventListener("click", () => {
+      selectedId = Number(el.getAttribute("data-id"));
+      currentScreen = "detail";
+      render();
+    });
+  });
+  phone.querySelector('[data-action="create"]').addEventListener("click", () => {
+    currentScreen = "create";
+    render();
+  });
+}
+
+function infoCard(iconName, label, value) {
+  return (
+    '<div class="info-card">' +
+      '<div class="info-card-head">' + icon(iconName, 16, "#0F5B45") + '<span>' + label + '</span></div>' +
+      '<p class="info-card-value">' + escapeHtml(value) + '</p>' +
+    '</div>'
+  );
+}
+
+function renderDetail() {
+  const phone = document.getElementById("phone");
+  const ev = events.find((e) => e.id === selectedId);
+  if (!ev) { currentScreen = "list"; render(); return; }
+  const isJoined = !!joinedState[ev.id];
+  const joined = getEffectiveJoined(ev);
+
+  phone.innerHTML =
+    '<div class="screen">' +
+      '<div style="padding:16px 16px 0;">' +
+        '<button class="back-btn" data-action="back">' + icon("back", 18) + ' 一覧へ戻る</button>' +
+      '</div>' +
+      '<div class="scroll" style="padding:8px 20px 100px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
+          '<h1 style="font-size:21px;font-weight:700;color:#1F2A26;margin:0;line-height:1.4;">' + escapeHtml(ev.title) + '</h1>' +
+          levelBadge(ev.level) +
+        '</div>' +
+        '<p style="font-size:13px;color:#5C6B65;margin-top:6px;">主催: ' + escapeHtml(ev.host) + '</p>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px;">' +
+          infoCard("clock", "日時", ev.date) +
+          infoCard("pin", "場所", ev.place) +
+          infoCard("flame", "距離", ev.distance) +
+          infoCard("gauge", "ペース目安", ev.pace) +
+        '</div>' +
+        '<div style="margin-top:20px;background:#fff;border:1px solid #E4E0D6;border-radius:16px;padding:16px;">' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">' +
+            icon("users", 15, "#0F5B45") +
+            '<span style="font-size:13px;font-weight:600;color:#1F2A26;">参加状況</span>' +
+          '</div>' +
+          progressBar(joined, ev.minPeople, ev.capacity) +
+          '<p style="font-size:12px;color:#5C6B65;margin-top:10px;margin-bottom:0;">最小遂行人数は' + ev.minPeople + '人です。達していなくても主催者の判断で開催される場合があります。</p>' +
+        '</div>' +
+        '<div style="margin-top:20px;">' +
+          '<h3 style="font-size:14px;font-weight:600;color:#1F2A26;margin-bottom:8px;">主催者からのメッセージ</h3>' +
+          '<p style="font-size:14px;color:#5C6B65;line-height:1.7;margin:0;">' + escapeHtml(ev.note) + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bottom-bar">' +
+        '<button class="primary-btn" data-action="join" ' + (isJoined ? "disabled" : "") + ' style="background:' + (isJoined ? "#E3F3EC" : "#1C8F6E") + ';color:' + (isJoined ? "#0F5B45" : "#fff") + ';cursor:' + (isJoined ? "default" : "pointer") + ';">' +
+          (isJoined ? icon("check", 18, "#0F5B45") + ' 参加表明済み' : "ワンタップで参加する") +
+        '</button>' +
+      '</div>' +
+    '</div>';
+
+  phone.querySelector('[data-action="back"]').addEventListener("click", () => {
+    currentScreen = "list";
+    render();
+  });
+  const joinBtn = phone.querySelector('[data-action="join"]');
+  if (joinBtn && !isJoined) {
+    joinBtn.addEventListener("click", () => {
+      joinedState[ev.id] = true;
+      render();
+    });
+  }
+}
+
+function renderCreate() {
+  const phone = document.getElementById("phone");
+  const form = { title: "", date: "", place: "", level: "beginner", minPeople: 3, capacity: 10, note: "" };
+
+  function levelButtonsHtml() {
+    let html = "";
+    Object.entries(LEVELS).forEach(([key, l]) => {
+      const activeClass = form.level === key ? " active-" + key : "";
+      html += '<button class="level-option' + activeClass + '" data-level="' + key + '">' + l.label + '</button>';
+    });
+    return html;
+  }
+
+  phone.innerHTML =
+    '<div class="screen">' +
+      '<div style="padding:16px 16px 0;">' +
+        '<button class="back-btn" data-action="back">' + icon("back", 18) + ' 戻る</button>' +
+      '</div>' +
+      '<div class="scroll" style="padding:8px 20px 100px;">' +
+        '<h1 style="font-size:21px;font-weight:700;color:#1F2A26;margin:4px 0 18px;">募集を作成する</h1>' +
+        '<div class="field"><label>タイトル</label><input class="text-input" id="f-title" placeholder="例：朝活5kmゆるラン" /></div>' +
+        '<div class="field"><label>日時</label><input class="text-input" id="f-date" placeholder="例：6/22(月) 7:00" /></div>' +
+        '<div class="field"><label>場所</label><input class="text-input" id="f-place" placeholder="例：皇居外周（桜田門スタート）" /></div>' +
+        '<div class="field"><label>レベル</label><div class="level-options" id="f-level-options">' + levelButtonsHtml() + '</div></div>' +
+        '<div class="two-col">' +
+          '<div class="field"><label>最小遂行人数</label><div class="stepper"><button data-step="min" data-dir="-1">−</button><div class="stepper-value" id="f-min-value">' + form.minPeople + '</div><button data-step="min" data-dir="1">＋</button></div></div>' +
+          '<div class="field"><label>募集上限</label><div class="stepper"><button data-step="cap" data-dir="-1">−</button><div class="stepper-value" id="f-cap-value">' + form.capacity + '</div><button data-step="cap" data-dir="1">＋</button></div></div>' +
+        '</div>' +
+        '<div class="field"><label>主催者からのメッセージ（任意）</label><textarea class="text-input" id="f-note" rows="3" placeholder="ペースや雰囲気、当日の流れなど"></textarea></div>' +
+      '</div>' +
+      '<div class="bottom-bar">' +
+        '<button class="primary-btn" id="f-submit" style="background:#E4E0D6;color:#5C6B65;cursor:default;">募集を公開する</button>' +
+      '</div>' +
+    '</div>';
+
+  function updateSubmitState() {
+    const canSubmit = form.title.trim() && form.place.trim() && form.date.trim();
+    const btn = document.getElementById("f-submit");
+    btn.style.background = canSubmit ? "#E8743B" : "#E4E0D6";
+    btn.style.color = canSubmit ? "#fff" : "#5C6B65";
+    btn.style.cursor = canSubmit ? "pointer" : "default";
+    btn.dataset.canSubmit = canSubmit ? "1" : "0";
+  }
+
+  document.getElementById("f-title").addEventListener("input", (e) => { form.title = e.target.value; updateSubmitState(); });
+  document.getElementById("f-date").addEventListener("input", (e) => { form.date = e.target.value; updateSubmitState(); });
+  document.getElementById("f-place").addEventListener("input", (e) => { form.place = e.target.value; updateSubmitState(); });
+  document.getElementById("f-note").addEventListener("input", (e) => { form.note = e.target.value; });
+
+  document.getElementById("f-level-options").querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      form.level = btn.getAttribute("data-level");
+      document.getElementById("f-level-options").querySelectorAll("button").forEach((b) => {
+        b.className = "level-option" + (b.getAttribute("data-level") === form.level ? " active-" + form.level : "");
+      });
+    });
+  });
+
+  phone.querySelectorAll('[data-step]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const dir = Number(btn.getAttribute("data-dir"));
+      if (btn.getAttribute("data-step") === "min") {
+        form.minPeople = Math.max(1, form.minPeople + dir);
+        if (form.capacity < form.minPeople) form.capacity = form.minPeople;
+        document.getElementById("f-min-value").textContent = form.minPeople;
+        document.getElementById("f-cap-value").textContent = form.capacity;
+      } else {
+        form.capacity = Math.max(form.minPeople, form.capacity + dir);
+        document.getElementById("f-cap-value").textContent = form.capacity;
+      }
+    });
+  });
+
+  document.getElementById("f-submit").addEventListener("click", () => {
+    if (document.getElementById("f-submit").dataset.canSubmit !== "1") return;
+    const newEvent = {
+      id: Date.now(),
+      title: form.title,
+      place: form.place,
+      date: form.date,
+      level: form.level,
+      minPeople: form.minPeople,
+      capacity: form.capacity,
+      joined: 0,
+      distance: "—",
+      pace: "—",
+      host: "あなた",
+      note: form.note || "よろしくお願いします！",
+    };
+    events = [newEvent, ...events];
+    currentScreen = "list";
+    render();
+  });
+
+  phone.querySelector('[data-action="back"]').addEventListener("click", () => {
+    currentScreen = "list";
+    render();
+  });
+}
+
+function render() {
+  if (currentScreen === "list") renderList();
+  else if (currentScreen === "detail") renderDetail();
+  else if (currentScreen === "create") renderCreate();
+}
+
+render();
+</script>
+</body>
+</html>
